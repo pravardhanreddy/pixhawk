@@ -57,7 +57,7 @@ def position_control():
         rate.sleep()
     
     # wait for FCU connection
-    while not current_state.connected and not current_state.armed:
+    while not current_state.connected or not current_state.armed:
         rate.sleep()
 
     # arm the drone
