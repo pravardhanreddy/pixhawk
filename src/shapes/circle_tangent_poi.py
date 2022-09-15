@@ -65,9 +65,9 @@ def circle():
 
     height = 0
     for i in range(10):
-        height += current_pose.pose.position.z
+        height += current_pose.pose.position.z / 10
         rate.sleep()
-    height = height / 10 # take average
+    # height = height / 10 # take average
 
     # arm the drone
     # arming_client(True)
