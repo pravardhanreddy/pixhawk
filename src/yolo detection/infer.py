@@ -2,13 +2,12 @@ import torch
 import cv2
 
 
-
-img = cv2.imread('/home/pravardhan/Downloads/nadir.jpg')
-cv2.imshow('Image', img)
+cap = cv2.VideoCapture('/home/pravardhan/Downloads/DJI_20220621160832_0002_S.MP4.mp4')
 
 
-model = torch.hub.load('/home/pravardhan/Documents/yolo/yolov5', 'custom', path='/home/pravardhan/Documents/yolo/best.engine', source='local')
-result = model(img)
+model = torch.hub.load('/home/pravardhan/Documents/yolo/yolov5', 'custom', path='/home/pravardhan/Documents/yolo/best.pt', source='local')
+model.conf = 0.75
+
 classes = ['House', 'Tarp']
 
 def plot_boxes(results, frame):
@@ -27,8 +26,22 @@ def plot_boxes(results, frame):
     return frame
 
 
-final_img = plot_boxes(result, img)
-cv2.imshow('Result', final_img)
+while cap.isOpened():
+    ret, frame = cap.read()
 
-cv2.waitKey(0)
+    if not ret:
+        break
+
+    # frame = cv2.resize(frame, (640,480))
+
+    result = model(frame)
+    frame = plot_boxes(result, frame)
+
+    cv2.imshow('Result', frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+
+cap.release()
 cv2.destroyAllWindows()
