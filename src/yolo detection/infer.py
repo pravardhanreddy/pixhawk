@@ -25,7 +25,7 @@ def plot_boxes(results, frame):
             cv2.rectangle(frame, (x1, y1), (x2, y2), bgr, 2)
             cv2.putText(frame, classes[int(labels[i])], (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, bgr, 2)
 
-    return frame, ((x1+x2)//2, (y1+y2)//2, cx//2, cy//2)
+    return frame, ((x1+x2)//2, (y1+y2)//2, cx//2, cy//2, abs((x2-x1)*(y2-y1)))
 
 
 while cap.isOpened():
