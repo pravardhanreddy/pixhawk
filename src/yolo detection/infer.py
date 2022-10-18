@@ -13,7 +13,7 @@ model.conf = 0.70
 classes = model.names
 
 def plot_boxes(results, frame):
-
+    cy, cx = frame.shape
     labels, cord = results.xyxyn[0][:, -1].cpu().numpy(), results.xyxyn[0][:, :-1].cpu().numpy()
     n = len(labels)
     x_shape, y_shape = frame.shape[1], frame.shape[0]
@@ -25,7 +25,7 @@ def plot_boxes(results, frame):
             cv2.rectangle(frame, (x1, y1), (x2, y2), bgr, 2)
             cv2.putText(frame, classes[int(labels[i])], (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, bgr, 2)
 
-    return frame, ((x1+x2)//2, (y1+y2)//2)
+    return frame, ((x1+x2)//2, (y1+y2)//2, cx//2, cy//2)
 
 
 while cap.isOpened():
@@ -33,8 +33,6 @@ while cap.isOpened():
 
     if not ret:
         break
-
-    # frame = cv2.resize(frame, (640,480))
 
     result = model(frame)
     frame, center = plot_boxes(result, frame)
