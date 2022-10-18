@@ -2,13 +2,14 @@ import torch
 import cv2
 
 
-cap = cv2.VideoCapture('/home/pravardhan/Downloads/DJI_20220621160832_0002_S.MP4.mp4')
+cap = cv2.VideoCapture(6)
 
 
-model = torch.hub.load('/home/pravardhan/Documents/yolo/yolov5', 'custom', path='/home/pravardhan/Documents/yolo/best.pt', source='local')
+model = torch.hub.load('/home/pravardhan/Documents/yolo/yolov5', 'custom', path='/home/pravardhan/Documents/yolo/yolov5/yolov5s.pt', source='local')
 model.conf = 0.75
 
-classes = ['House', 'Tarp']
+# classes = ['House', 'Tarp']
+classes = model.names
 
 def plot_boxes(results, frame):
 
