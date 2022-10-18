@@ -1,12 +1,13 @@
 import torch
 import cv2
-
+import pickle
 
 cap = cv2.VideoCapture(6)
 
+outfile = open('/dev/shm/center.pkl', 'wb')
 
 model = torch.hub.load('/home/pravardhan/Documents/yolo/yolov5', 'custom', path='/home/pravardhan/Documents/yolo/yolov5/yolov5s.pt', source='local')
-model.conf = 0.75
+model.conf = 0.70
 
 # classes = ['House', 'Tarp']
 classes = model.names
@@ -24,7 +25,7 @@ def plot_boxes(results, frame):
             cv2.rectangle(frame, (x1, y1), (x2, y2), bgr, 2)
             cv2.putText(frame, classes[int(labels[i])], (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 0.9, bgr, 2)
 
-    return frame
+    return frame, ((x1+x2)//2, (y1+y2)//2)
 
 
 while cap.isOpened():
@@ -36,13 +37,15 @@ while cap.isOpened():
     # frame = cv2.resize(frame, (640,480))
 
     result = model(frame)
-    frame = plot_boxes(result, frame)
+    frame, center = plot_boxes(result, frame)
+
+    pickle.dump(center, outfile)
 
     cv2.imshow('Result', frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-
+outfile.close()
 cap.release()
 cv2.destroyAllWindows()
