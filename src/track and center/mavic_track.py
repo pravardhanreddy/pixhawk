@@ -4,25 +4,29 @@ import socket
 
 # rtmp_url = "rtmp://localhost/live/testing"
 # vid = cv2.VideoCapture(rtmp_url)
-vid = cv2.VideoCapture(2)
+vid = cv2.VideoCapture(22)
 
 # center = (320, 180)
 # center = (640, 360)
 center = (320,240)
 
-socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 def get_center(vid):
+    global center
     ret, img = vid.read()
-    cv2.circle(img, center, 3, (0,0,255), -1)
+    cy, cx, _ = img.shape
+    center = (cx,cy)
+    cv2.circle(img, (cx//2,cy//2), 3, (0,255,0), -1)
     print(len(img), len(img[0]))
 
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = img[:,:,2]
     blur = cv2.medianBlur(gray, 19)
     sharpen_kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
     sharpen = cv2.filter2D(blur, -1, sharpen_kernel)
 
-    thresh = cv2.threshold(sharpen,100,255, cv2.THRESH_BINARY_INV)[1]
+    thresh = cv2.threshold(sharpen,150,255, cv2.THRESH_BINARY_INV)[1]
     # cv2.imshow('thresh', thresh)
 
 
@@ -59,8 +63,8 @@ def get_center(vid):
 
 
 
-MAX_VEL = 0.3
-UDP_IP = '192.168.8.213'
+MAX_VEL = 0.5
+UDP_IP = '192.168.0.101'
 UDP_PORT = 2001
 
 while True:
@@ -71,11 +75,14 @@ while True:
         if np.linalg.norm((r-center[0], c - center[1])) < 10:
             print('centered')
 
-        vel_y = max(min((center[0] - r) / 100 , MAX_VEL), -MAX_VEL)
-        vel_x = max(min((center[1] - c) / 100 , MAX_VEL), -MAX_VEL)
+        vel_y = max(min((center[0]//2 - r) / 100 , MAX_VEL), -MAX_VEL)
+        vel_x = max(min((center[1]//2 - c) / 100 , MAX_VEL), -MAX_VEL)
         msg = str(vel_x) + ',' + str(vel_y)
-        socket.sendto(msg.encode(), (UDP_IP, UDP_PORT))
+        sock.sendto(msg.encode(), (UDP_IP, UDP_PORT))
         print('Velocity: ',vel_x, vel_y)
+    else:
+        msg = 'None'
+        sock.sendto(msg.encode(), (UDP_IP, UDP_PORT))
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
