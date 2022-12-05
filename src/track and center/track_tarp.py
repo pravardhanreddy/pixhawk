@@ -11,6 +11,9 @@ import cv2
 vid = cv2.VideoCapture(42)
 
 center = (320, 180)
+frame_area = 230400
+upper_area = frame_area * 0.3
+lower_area = frame_area * 0.15
 
 def get_center(vid):
     ret, img = vid.read()
@@ -40,21 +43,34 @@ def get_center(vid):
     contours = contours[0] if len(contours) == 2 else contours[1]
 
     rot_rect = None
+    area = None
+
+    if len(contours) == 0:
+        return None, None, None
 
     for c in contours:
-        rot_rect = cv2.minAreaRect(c)
-        box = cv2.boxPoints(rot_rect)
-        box = np.int0(box)
-        # draw rotated rectangle on copy of img
-        cv2.drawContours(img,[box],0,(0,0,0),2)
-        cv2.circle(img, np.int0(rot_rect[0]), 3, (255,0,0), -1)
-        cv2.putText(img, str(np.linalg.norm((rot_rect[0][0]-center[0], rot_rect[0][1] - center[1]))), np.int0(rot_rect[0]), cv2.FONT_HERSHEY_SIMPLEX, 
-                   0.5, (0,255,0), 2, cv2.LINE_AA)
+        temp_rot_rect = cv2.minAreaRect(c)
+        temp_area = cv2.contourArea(c)
+        if area == None or temp_area > area:
+            area = temp_area
+            rot_rect = temp_rot_rect
+
+    box = cv2.boxPoints(rot_rect)
+    box = np.int0(box)
+    # draw rotated rectangle on copy of img
+    cv2.drawContours(img,[box],0,(0,0,0),2)
+    cv2.circle(img, np.int0(rot_rect[0]), 3, (255,0,0), -1)
+    cv2.putText(img, str(np.linalg.norm((rot_rect[0][0]-center[0], rot_rect[0][1] - center[1]))), np.int0(rot_rect[0]), cv2.FONT_HERSHEY_SIMPLEX, 
+                0.5, (0,255,0), 2, cv2.LINE_AA)
 
     cv2.imshow('shape', img)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         pass
-    return np.int0(rot_rect[0]) if rot_rect else center
+    if rot_rect:
+        r,c = np.int0(rot_rect[0])
+        return r, c, area
+
+    return None, None, None
 
 # callback method for state sub
 mavros.set_namespace()
@@ -159,15 +175,23 @@ def position_control():
             pose.pose.position.z = h
             centering = True
 
-        r,c = get_center(vid)
+        r,c,area = get_center(vid)
         if centering:
-            if np.linalg.norm((r-center[0], c - center[1])) < 10:
-                centering = False
-                continue
-
+            vel = TwistStamped()
             vel.header.stamp = rospy.Time.now()
-            vel.twist.linear.y = max(min((center[0] - r) / 100 , 0.3), -0.5)
-            vel.twist.linear.x = max(min((center[1] - c) / 100 , 0.3), -0.5)
+
+            if r:
+                if np.linalg.norm((r-center[0], c - center[1])) < 10 and lower_area < area < upper_area:
+                    centering = False
+                    continue
+
+                vel.twist.linear.y = max(min((center[0] - r) / 100 , 0.3), -0.5)
+                vel.twist.linear.x = max(min((center[1] - c) / 100 , 0.3), -0.5)
+                if area < lower_area:
+                    vel.twist.linear.z = -0.1
+                elif area > upper_area:
+                    vel.twist.linear.z = 0.1
+            
 
             vel_pub.publish(vel)
             
