@@ -16,8 +16,8 @@ outfile = open('/dev/shm/center.pkl', 'wb')
 model = torch.hub.load('/home/pravardhan/Documents/yolo/yolov5', 'custom', path='/home/pravardhan/Documents/yolo/best.pt', source='local')
 model.conf = 0.3
 
-classes = ['Tarp', 'Tarp']
-# classes = model.names
+# classes = ['Tarp', 'Tarp']
+classes = model.names
 
 def plot_boxes(results, frame):
     cy, cx, _ = frame.shape
@@ -53,8 +53,15 @@ while cap.isOpened():
         r,c, cntrx, cntry, area = center 
         vel_y = max(min((cntrx - r) / 100 , MAX_VEL), -MAX_VEL)
         vel_x = max(min((cntry - c) / 100 , MAX_VEL), -MAX_VEL)
-        msg = str(vel_x) + ',' + str(vel_y)
-        print('Velx:',vel_x, 'vely:', vel_y)
+
+        close_enough = 0
+        if abs(cntrx - r) < 30 and abs(cntry - c) < 30:
+            close_enough = 1
+        else:
+            close_enough = 0
+ 
+        msg = str(vel_x) + ',' + str(vel_y) + ',' + str(close_enough)
+        print('Velx:',vel_x, 'vely:', vel_y, 'close:', close_enough)
         sock.sendto(msg.encode(), (UDP_IP, UDP_PORT))
 
         pickle.dump(center, outfile)
